@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weekly Meal & Grocery Planner</title>
+<style>
+  :root{
+    --cream:#FAF6EC; --paper:#F1ECDD; --ink:#2B2118; --ink-soft:#5C5245;
+    --sage:#3F6248; --sage-soft:#E4EDE3; --paprika:#C6541E; --paprika-soft:#F4E3D6;
+    --gold:#B8860B; --line:#DCD3BF; --white:#FFFFFF;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--cream);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.45;}
+  .wrap{max-width:720px;margin:0 auto;padding:28px 20px 80px;}
+  header{margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
+  header .kicker{font-size:13px;color:var(--paprika);font-weight:600;letter-spacing:0.02em;margin-bottom:6px;}
+  h1{font-family:Georgia,'Times New Roman',serif;font-size:34px;margin:0 0 8px;color:var(--ink);line-height:1.15;}
+  header p{color:var(--ink-soft);font-size:15px;margin:0;max-width:480px;}
+  #priceEditToggle{flex-shrink:0;font-size:12px;padding:9px 14px;border-radius:8px;border:1px solid var(--sage);background:var(--white);color:var(--sage);font-weight:600;cursor:pointer;white-space:nowrap;}
+  section{margin-bottom:30px;}
+  h2{font-family:Georgia,serif;font-size:19px;margin:0 0 12px;color:var(--ink);}
+  .subtle{font-size:12px;color:var(--ink-soft);margin:-6px 0 12px;}
+  .household{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
+  .stat-card{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--white);}
+  .stat-card .label{font-size:12px;color:var(--ink-soft);margin-bottom:8px;}
+  .stepper{display:flex;align-items:center;gap:12px;}
+  .stepper button{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--paper);font-size:16px;cursor:pointer;color:var(--ink);}
+  .stepper span{font-size:17px;font-weight:600;min-width:16px;text-align:center;}
+  textarea{width:100%;font:inherit;font-size:14px;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--white);resize:vertical;color:var(--ink);}
+  .budget-card{border:1px solid var(--line);border-radius:10px;padding:14px 16px;background:var(--white);margin-bottom:14px;}
+  .budget-card .row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+  .budget-card .row .label{font-size:13px;color:var(--ink-soft);}
+  .budget-card .row .amt{font-size:20px;font-weight:700;color:var(--sage);}
+  .budget-card input[type=range]{width:100%;accent-color:var(--sage);}
+  .budget-card .minmax{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-soft);margin-top:2px;}
+  .total-bar{display:flex;justify-content:space-between;align-items:center;background:var(--sage-soft);border-radius:10px;padding:12px 16px;margin-bottom:18px;}
+  .total-bar .label{font-size:13px;color:var(--ink-soft);}
+  .total-bar .value{font-size:20px;font-weight:700;color:var(--sage);}
+  .total-bar .value.over{color:var(--paprika);}
+  .total-bar .budget{font-size:12px;font-weight:400;color:var(--ink-soft);}
+  .range-row{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+  .range-row label{font-size:13px;color:var(--ink-soft);flex-shrink:0;}
+  .range-row input[type=range]{flex:1;accent-color:var(--sage);}
+  .range-row .val{font-size:14px;font-weight:600;min-width:20px;}
+  .tabs{display:flex;gap:6px;margin-bottom:12px;background:var(--paper);border-radius:10px;padding:4px;}
+  .tab{flex:1;text-align:center;font-size:13px;font-weight:600;padding:8px 6px;border-radius:8px;border:none;background:transparent;color:var(--ink-soft);cursor:pointer;}
+  .tab.active{background:var(--white);color:var(--sage);box-shadow:0 1px 2px rgba(0,0,0,0.08);}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+  .chip{font-size:12px;padding:6px 13px;border-radius:20px;border:1px solid var(--line);background:var(--white);color:var(--ink-soft);cursor:pointer;}
+  .chip.active{background:var(--sage);border-color:var(--sage);color:var(--white);}
+  .chip.fav-chip.active{background:var(--gold);border-color:var(--gold);}
+  .item-list{display:flex;flex-direction:column;gap:8px;}
+  .item{border-radius:10px;border:1px solid var(--line);background:var(--white);overflow:hidden;}
+  .item.selected{border-color:var(--sage);background:var(--sage-soft);}
+  .item-top{display:flex;align-items:center;gap:8px;padding:12px 14px;cursor:pointer;}
+  .dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);flex-shrink:0;}
+  .item.selected .dot{border-color:var(--sage);background:var(--sage);position:relative;}
+  .item.selected .dot::after{content:'';position:absolute;left:5px;top:2px;width:4px;height:8px;border:solid white;border-width:0 2px 2px 0;transform:rotate(45deg);}
+  .item-name{font-size:14px;font-weight:600;}
+  .item-cuisine{font-size:11px;color:var(--paprika);margin-top:1px;}
+  .item-note{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .item-price{font-size:13px;font-weight:600;color:var(--ink-soft);white-space:nowrap;}
+  .item.selected .item-price{color:var(--sage);}
+  .icon-btn{width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:var(--white);color:var(--ink-soft);font-size:14px;cursor:pointer;flex-shrink:0;line-height:1;}
+  .icon-btn.fav-on{color:var(--gold);border-color:var(--gold);}
+  .item-controls{display:flex;align-items:center;gap:10px;padding:0 14px 12px 42px;flex-wrap:wrap;}
+  .item-controls select{font-size:12px;padding:4px 6px;border-radius:6px;border:1px solid var(--line);}
+  .item-controls .srv{font-size:12px;color:var(--ink-soft);}
+  .item-controls button{width:24px;height:24px;border-radius:50%;border:1px solid var(--line);background:var(--paper);cursor:pointer;}
+  .item-controls .srv-val{font-size:13px;font-weight:600;min-width:14px;text-align:center;}
+  .fresh-tag{color:var(--sage);}
+  #confirmBtn{width:100%;padding:14px;border-radius:10px;border:none;background:var(--paprika);color:var(--white);font-size:15px;font-weight:600;cursor:pointer;margin-top:8px;}
+  #confirmBtn:disabled{background:#D8CFC0;color:#8C8272;cursor:not-allowed;}
+  #groceryList{display:none;margin-top:36px;padding-top:28px;border-top:1px solid var(--line);}
+  .grocery-row{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--white);margin-bottom:6px;}
+  .grocery-row .gname{flex:1;font-size:13px;}
+  .grocery-row .gqty{font-size:12px;font-weight:600;min-width:60px;text-align:center;}
+  .grocery-row .gtotal{font-size:12px;font-weight:600;min-width:50px;text-align:right;}
+  .grocery-row button{width:24px;height:24px;border-radius:50%;border:1px solid var(--line);background:var(--paper);cursor:pointer;}
+  .note-box{background:var(--paprika-soft);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--ink-soft);margin-top:18px;}
+  footer{margin-top:40px;font-size:11px;color:var(--ink-soft);text-align:center;}
+  #priceOverlay{display:none;position:fixed;inset:0;background:rgba(43,33,24,0.45);z-index:50;align-items:flex-end;justify-content:center;}
+  #priceOverlay.open{display:flex;}
+  #priceSheet{background:var(--cream);width:100%;max-width:720px;max-height:88vh;overflow-y:auto;border-radius:16px 16px 0 0;padding:20px 20px 100px;position:relative;}
+  #priceSheet h2{margin-bottom:4px;}
+  .import-box{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:14px 0 6px;}
+  .import-box label{font-size:12px;font-weight:600;color:var(--sage);display:block;margin-bottom:6px;}
+  .import-box textarea{font-size:12px;font-family:ui-monospace,Menlo,monospace;min-height:70px;}
+  #importPricesBtn{margin-top:8px;padding:9px 14px;border-radius:8px;border:none;background:var(--sage);color:var(--white);font-size:13px;font-weight:600;cursor:pointer;}
+  #importMsg{font-size:12px;color:var(--sage);margin-top:6px;display:none;}
+  .price-cat{font-size:12px;font-weight:700;color:var(--paprika);text-transform:uppercase;letter-spacing:0.03em;margin:18px 0 8px;}
+  .price-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);}
+  .price-row .pname{flex:1;font-size:13px;}
+  .price-row .punit{font-size:11px;color:var(--ink-soft);}
+  .price-row .pkey{font-size:10px;color:#A79E8C;}
+  .price-row input{width:74px;font-size:14px;padding:6px 8px;border-radius:6px;border:1px solid var(--line);text-align:right;}
+  .price-actions{position:sticky;bottom:0;background:var(--cream);padding:14px 0 4px;display:flex;gap:10px;border-top:1px solid var(--line);margin-top:10px;}
+  .price-actions button{flex:1;padding:12px;border-radius:10px;border:none;font-size:14px;font-weight:600;cursor:pointer;}
+  #savePricesBtn{background:var(--sage);color:var(--white);}
+  #resetPricesBtn{background:var(--white);color:var(--ink-soft);border:1px solid var(--line) !important;}
+  #closePriceSheet{position:absolute;top:16px;right:16px;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--white);cursor:pointer;font-size:14px;}
+  #saveConfirmMsg{font-size:12px;color:var(--sage);margin-top:8px;display:none;text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="kicker">This week's sale-based plan</div>
+      <h1>Weekly Meal &amp; Grocery Planner</h1>
+      <p>Pick your household size and budget, choose meals and snacks, and build a priced grocery list.</p>
+    </div>
+    <button id="priceEditToggle" type="button">Update prices</button>
+  </header>
+
+  <section>
+    <div class="household">
+      <div class="stat-card">
+        <div class="label">Adults</div>
+        <div class="stepper"><button id="adultsMinus">−</button><span id="adultsVal">2</span><button id="adultsPlus">+</button></div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Kids</div>
+        <div class="stepper"><button id="kidsMinus">−</button><span id="kidsVal">0</span><button id="kidsPlus">+</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Diet or food requests</h2>
+    <textarea id="dietBox" rows="2" placeholder="e.g. no dairy this week, more Asian food, kid-friendly spice level..."></textarea>
+  </section>
+
+  <section>
+    <div class="budget-card">
+      <div class="row"><span class="label">Weekly budget</span><span class="amt" id="budgetVal">$150</span></div>
+      <input type="range" id="budgetSlider" min="25" max="500" step="5" value="150">
+      <div class="minmax"><span>$25</span><span>$500</span></div>
+    </div>
+    <div class="total-bar">
+      <span class="label">Estimated total</span>
+      <span class="value" id="totalVal">$0.00 <span class="budget">/ $150</span></span>
+    </div>
+  </section>
+
+  <section>
+    <div class="tabs" id="mealTypeTabs"></div>
+
+    <div class="range-row">
+      <label id="mealCountLabel">Dinners to cook</label>
+      <input type="range" min="1" max="10" value="7" id="mealCount">
+      <span class="val" id="mealCountVal">7</span>
+    </div>
+    <h2>Meals</h2>
+    <div class="subtle">Prices update live from the ad</div>
+    <div class="chips" id="cuisineFilters"></div>
+    <button class="chip fav-chip" id="mealFavToggle" type="button">★ Favorites only</button>
+    <button class="chip fav-chip" id="quickOnlyToggle" type="button">⚡ Quick only</button>
+
+    <div class="range-row" id="quickRow" style="margin-top:14px;">
+      <label>Quick meals (under 20 min) target</label>
+      <input type="range" min="1" max="3" value="2" id="quickTarget">
+      <span class="val" id="quickTargetVal">2</span>
+    </div>
+    <div class="subtle" id="quickProgress" style="margin-top:-8px;">0 of 2 quick meals selected</div>
+
+    <div class="item-list" id="mealList" style="margin-top:10px;"></div>
+  </section>
+
+  <section>
+    <div class="range-row">
+      <label>How many snacks</label>
+      <input type="range" min="1" max="10" value="6" id="snackCount">
+      <span class="val" id="snackCountVal">6</span>
+    </div>
+    <h2>Snacks</h2>
+    <div class="subtle"><span class="fresh-tag">●</span> = fresh fruit/veggie pick</div>
+    <div class="chips" id="snackCatFilters"></div>
+    <button class="chip fav-chip" id="snackFavToggle" type="button">★ Favorites only</button>
+    <div class="item-list" id="snackList" style="margin-top:10px;"></div>
+  </section>
+
+  <button id="confirmBtn" disabled>Build grocery list</button>
+
+  <div id="groceryList">
+    <h2>Grocery list</h2>
+    <div class="subtle">Adjust quantities down for anything you already have on hand.</div>
+    <div id="groceryRoot"></div>
+    <div class="total-bar" style="margin-top:14px;">
+      <span class="label">Grocery total</span>
+      <span class="value" id="groceryTotalVal">$0.00 <span class="budget">/ $150</span></span>
+    </div>
+    <div class="note-box">Meal and snack prices are calculated live from the ingredient prices below — update them with each new ad using "Update prices," no code editing needed.</div>
+  </div>
+
+  <footer>Weekly Meal & Grocery Planner — built with Claude</footer>
+</div>
+
+<div id="priceOverlay">
+  <div id="priceSheet">
+    <button id="closePriceSheet" type="button">✕</button>
+    <h2>Update this week's prices</h2>
+    <div class="subtle">Paste a price block from Claude, or edit items individually below.</div>
+    <div class="import-box">
+      <label>Paste prices (ask Claude to read the new ad and give you this block)</label>
+      <textarea id="pasteBox" placeholder="chicken_breast:4.99&#10;ground_beef:3.60&#10;peppers:1.50&#10;..."></textarea>
+      <button id="importPricesBtn" type="button">Import</button>
+      <div id="importMsg"></div>
+    </div>
+    <div id="priceForm"></div>
+    <div class="price-actions">
+      <button id="resetPricesBtn" type="button">Reset to defaults</button>
+      <button id="savePricesBtn" type="button">Save prices</button>
+    </div>
+    <div id="saveConfirmMsg">Saved — prices updated for this device.</div>
+  </div>
+</div>
+
+<script>
+const defaultCatalog = {
+  chicken_breast:{name:"Chicken breast, thin sliced",unit:"lb",price:4.99,cat:"Meat & seafood"},
+  chicken_tenderloin:{name:"Chicken tenderloins",unit:"lb",price:4.99,cat:"Meat & seafood"},
+  ground_beef:{name:"Ground beef",unit:"lb",price:3.60,cat:"Meat & seafood"},
+  ground_turkey:{name:"Ground turkey",unit:"lb",price:3.99,cat:"Meat & seafood"},
+  pork_chops:{name:"Pork loin chops, bone-in center cut",unit:"lb",price:2.99,cat:"Meat & seafood"},
+  pork_shoulder:{name:"Pork shoulder butt roast",unit:"lb",price:1.79,cat:"Meat & seafood"},
+  spareribs:{name:"St. Louis-style spareribs",unit:"lb",price:2.99,cat:"Meat & seafood"},
+  sirloin_steak:{name:"Angus top sirloin steak",unit:"lb",price:10.99,cat:"Meat & seafood"},
+  flank_steak:{name:"Flank steak, sliced thin",unit:"lb",price:8.99,cat:"Meat & seafood"},
+  sausage:{name:"Smoked sausage",unit:"pack",price:3.5,cat:"Meat & seafood"},
+  breakfast_sausage:{name:"Breakfast sausage links/patties",unit:"pack",price:3.99,cat:"Meat & seafood"},
+  bacon:{name:"Bacon, 12oz",unit:"pack",price:3.99,cat:"Meat & seafood"},
+  tuna:{name:"Tuna pouch",unit:"ea",price:1.0,cat:"Meat & seafood"},
+  shrimp:{name:"Shrimp, peeled & deveined",unit:"lb",price:7.99,cat:"Meat & seafood"},
+  salmon:{name:"Salmon fillet",unit:"lb",price:8.99,cat:"Meat & seafood"},
+  eggs:{name:"Eggs, dozen",unit:"dozen",price:2.99,cat:"Meat & seafood"},
+  turkey_deli:{name:"Deli turkey",unit:"lb",price:6.99,cat:"Meat & seafood"},
+  ham_deli:{name:"Deli ham",unit:"lb",price:6.49,cat:"Meat & seafood"},
+
+  peppers:{name:"Multicolor bell peppers, 3ct",unit:"pack",price:1.5,cat:"Produce"},
+  onions:{name:"Yellow onions, 3lb bag",unit:"bag",price:2.49,cat:"Produce"},
+  potatoes:{name:"Russet potatoes, 5lb bag",unit:"bag",price:2.49,cat:"Produce"},
+  sweet_potato:{name:"Sweet potatoes",unit:"lb",price:1.29,cat:"Produce"},
+  carrots:{name:"Baby carrots, 12oz",unit:"bag",price:1.69,cat:"Produce"},
+  celery:{name:"Celery",unit:"ea",price:1.69,cat:"Produce"},
+  apples:{name:"Honeycrisp apples",unit:"lb",price:1.49,cat:"Produce"},
+  bananas:{name:"Bananas",unit:"lb",price:0.59,cat:"Produce"},
+  oranges:{name:"Oranges / clementines, 3lb bag",unit:"bag",price:5.99,cat:"Produce"},
+  grapes:{name:"Seedless grapes",unit:"lb",price:2.29,cat:"Produce"},
+  watermelon:{name:"Mini seedless watermelon",unit:"ea",price:3.99,cat:"Produce"},
+  cutfruit:{name:"Fresh cut fruit cups",unit:"cup",price:3.0,cat:"Produce"},
+  saladkit:{name:"Chopped salad kit",unit:"pack",price:3.0,cat:"Produce"},
+  cucumber:{name:"Cucumber",unit:"ea",price:0.99,cat:"Produce"},
+  tomato:{name:"Tomatoes",unit:"lb",price:1.99,cat:"Produce"},
+  cherry_tomatoes:{name:"Cherry tomatoes",unit:"pint",price:2.99,cat:"Produce"},
+  mushrooms:{name:"Mushrooms",unit:"pack",price:2.49,cat:"Produce"},
+  broccoli:{name:"Broccoli florets",unit:"bag",price:2.49,cat:"Produce"},
+  frozen_stirfry_veg:{name:"Frozen stir-fry vegetables",unit:"bag",price:2.99,cat:"Produce"},
+  lettuce:{name:"Lettuce",unit:"head",price:1.99,cat:"Produce"},
+
+  sourcream:{name:"Sour cream, 8oz",unit:"ea",price:1.33,cat:"Dairy"},
+  cheese:{name:"Shredded cheese / cheese sticks",unit:"pack",price:3.0,cat:"Dairy"},
+  string_cheese:{name:"String cheese",unit:"pack",price:3.49,cat:"Dairy"},
+  cottage_cheese:{name:"Cottage cheese cups",unit:"pack",price:3.99,cat:"Dairy"},
+  creamcheese:{name:"Cream cheese",unit:"ea",price:3.49,cat:"Dairy"},
+  heavy_cream:{name:"Heavy cream",unit:"pint",price:2.99,cat:"Dairy"},
+  parmesan:{name:"Parmesan, grated",unit:"container",price:3.99,cat:"Dairy"},
+  feta_cheese:{name:"Feta cheese",unit:"block",price:3.99,cat:"Dairy"},
+  yogurt:{name:"Yogurt cups",unit:"cup",price:1.2,cat:"Dairy"},
+  milk:{name:"Milk, half gallon",unit:"ea",price:3.49,cat:"Dairy"},
+
+  tortillas:{name:"Flour tortillas",unit:"pack",price:1.67,cat:"Pantry"},
+  tacoshells:{name:"Taco shells",unit:"pack",price:1.67,cat:"Pantry"},
+  pita_bread:{name:"Pita bread",unit:"pack",price:2.99,cat:"Pantry"},
+  bagels:{name:"Bagels",unit:"pack",price:3.49,cat:"Pantry"},
+  salsa:{name:"Salsa, 15oz",unit:"jar",price:2.99,cat:"Pantry"},
+  pasta:{name:"Pasta, 12-16oz",unit:"box",price:1.0,cat:"Pantry"},
+  rice:{name:"Rice",unit:"bag",price:3.49,cat:"Pantry"},
+  noodles:{name:"Stir-fry noodles",unit:"pack",price:2.49,cat:"Pantry"},
+  marinara:{name:"Marinara sauce",unit:"jar",price:2.99,cat:"Pantry"},
+  mayo:{name:"Mayo, 30oz",unit:"jar",price:2.99,cat:"Pantry"},
+  hummus:{name:"Hummus",unit:"tub",price:3.49,cat:"Pantry"},
+  guacamole:{name:"Guacamole",unit:"tub",price:3.99,cat:"Pantry"},
+  olives:{name:"Olives",unit:"jar",price:3.49,cat:"Pantry"},
+  chickpeas:{name:"Chickpeas, canned",unit:"can",price:1.19,cat:"Pantry"},
+  soy_sauce:{name:"Soy sauce",unit:"bottle",price:2.99,cat:"Pantry"},
+  teriyaki_sauce:{name:"Teriyaki sauce",unit:"bottle",price:2.99,cat:"Pantry"},
+  marinade:{name:"Grill seasoning packet",unit:"packet",price:2.0,cat:"Pantry"},
+  bread:{name:"Sandwich bread loaf",unit:"loaf",price:3.79,cat:"Pantry"},
+  buns:{name:"Sandwich buns",unit:"pack",price:2.5,cat:"Pantry"},
+  chips:{name:"Kettle-style chips",unit:"bag",price:3.0,cat:"Pantry"},
+  pretzels:{name:"Pretzels",unit:"bag",price:2.99,cat:"Pantry"},
+  goldfish:{name:"Goldfish crackers multipack",unit:"box",price:8.99,cat:"Pantry"},
+  popcorn:{name:"Popcorn",unit:"bag",price:2.49,cat:"Pantry"},
+  cookies:{name:"Cookies",unit:"pack",price:3.99,cat:"Pantry"},
+  caramel_dip:{name:"Caramel dip",unit:"tub",price:4.0,cat:"Pantry"},
+  oats:{name:"Oats",unit:"container",price:3.49,cat:"Pantry"},
+  granola:{name:"Granola",unit:"bag",price:4.49,cat:"Pantry"},
+  pancake_mix:{name:"Pancake mix",unit:"box",price:2.99,cat:"Pantry"},
+  syrup:{name:"Syrup",unit:"bottle",price:3.49,cat:"Pantry"},
+  tomato_soup:{name:"Tomato soup, canned",unit:"can",price:1.29,cat:"Pantry"},
+  pantrystaples:{name:"Chili powder, cumin, paprika, garlic powder, salt, olive oil",unit:"set",price:0,cat:"Pantry"}
+};
+
+const STORAGE_KEY = "mealPlannerPriceOverrides";
+const FAV_KEY = "mealPlannerFavorites";
+
+function loadCatalog(){
+  const cat = {};
+  Object.keys(defaultCatalog).forEach(k=> cat[k] = {...defaultCatalog[k]});
+  try{
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    Object.keys(saved).forEach(k=>{ if(cat[k]) cat[k].price = saved[k]; });
+  }catch(e){}
+  return cat;
+}
+let catalog = loadCatalog();
+
+function loadFavorites(){
+  try{ return JSON.parse(localStorage.getItem(FAV_KEY) || '{"meals":[],"snacks":[]}'); }
+  catch(e){ return {meals:[], snacks:[]}; }
+}
+let favorites = loadFavorites();
+function saveFavorites(){ localStorage.setItem(FAV_KEY, JSON.stringify(favorites)); }
+function toggleFav(list, name){
+  const arr = favorites[list];
+  const idx = arr.indexOf(name);
+  if(idx>=0) arr.splice(idx,1); else arr.push(name);
+  saveFavorites();
+}
+
+const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+
+const meals = [
+  // ---- Breakfast ----
+  {n:"Scrambled eggs, bacon & toast",type:"Breakfast",cuisine:"Breakfast",note:"Eggs, bacon, toast",baseServ:4,
+    ing:[["eggs",1],["bacon",1],["bread",0.5]]},
+  {n:"Overnight oats with fruit",type:"Breakfast",cuisine:"Breakfast",note:"Oats, yogurt, fruit",baseServ:4,
+    ing:[["oats",1],["yogurt",2],["apples",1]]},
+  {n:"Breakfast burritos",type:"Breakfast",cuisine:"Breakfast",note:"Eggs, sausage, tortillas, cheese",baseServ:4,
+    ing:[["eggs",1],["breakfast_sausage",1],["tortillas",1],["cheese",0.5],["salsa",0.3]]},
+  {n:"Pancakes with banana",type:"Breakfast",cuisine:"Breakfast",note:"Pancake mix, syrup, banana",baseServ:4,
+    ing:[["pancake_mix",1],["syrup",0.5],["bananas",1]]},
+  {n:"Greek yogurt parfait",type:"Breakfast",cuisine:"Breakfast",note:"Yogurt, granola, grapes",baseServ:4,
+    ing:[["yogurt",4],["granola",0.5],["grapes",1]]},
+  {n:"Bagels with cream cheese",type:"Breakfast",cuisine:"Breakfast",note:"Bagels, cream cheese",baseServ:4,
+    ing:[["bagels",1],["creamcheese",1]]},
+  {n:"Veggie omelet",type:"Breakfast",cuisine:"Breakfast",note:"Eggs, peppers, onions, mushrooms, cheese",baseServ:4,
+    ing:[["eggs",1.5],["peppers",0.5],["onions",0.2],["mushrooms",0.5],["cheese",0.5]]},
+  {n:"Breakfast potato hash",type:"Breakfast",cuisine:"Breakfast",note:"Potatoes, sausage, peppers, onions",baseServ:4,
+    ing:[["potatoes",1.5],["breakfast_sausage",1],["peppers",0.5],["onions",0.33]]},
+  {n:"French toast",type:"Breakfast",cuisine:"Breakfast",note:"Bread, eggs, syrup",baseServ:4,
+    ing:[["bread",0.75],["eggs",1],["syrup",0.5]]},
+  {n:"Banana yogurt smoothie bowls",type:"Breakfast",cuisine:"Breakfast",note:"Banana, yogurt, granola",baseServ:4,
+    ing:[["bananas",2],["yogurt",4],["granola",0.5]]},
+
+  // ---- Lunch ----
+  {n:"Turkey & cheese wraps",type:"Lunch",cuisine:"Lunch",note:"Deli turkey, tortillas, cheese, lettuce",baseServ:4,quick:true,
+    ing:[["turkey_deli",0.75],["tortillas",1],["cheese",0.5],["lettuce",0.5]]},
+  {n:"Chicken Caesar salad",type:"Lunch",cuisine:"Lunch",note:"Chicken, salad kit, parmesan",baseServ:4,
+    ing:[["chicken_breast",1],["saladkit",1],["parmesan",0.3]]},
+  {n:"Grilled cheese & tomato soup",type:"Lunch",cuisine:"Lunch",note:"Bread, cheese, tomato soup",baseServ:4,quick:true,
+    ing:[["bread",1],["cheese",1],["tomato_soup",2]]},
+  {n:"Chicken tenderloin wraps",type:"Lunch",cuisine:"Lunch",note:"Tenderloins, tortillas, salad kit",baseServ:4,
+    ing:[["chicken_tenderloin",1],["tortillas",1],["saladkit",0.5]]},
+  {n:"Ham & cheese sandwiches",type:"Lunch",cuisine:"Lunch",note:"Deli ham, bread, cheese",baseServ:4,quick:true,
+    ing:[["ham_deli",0.75],["bread",1],["cheese",0.5]]},
+  {n:"Tuna salad sandwiches",type:"Lunch",cuisine:"Lunch",note:"Tuna, mayo, bread",baseServ:4,quick:true,
+    ing:[["tuna",2],["mayo",0.3],["bread",1]]},
+  {n:"Leftover-friendly rice bowls",type:"Lunch",cuisine:"Lunch",note:"Rice, stir-fry veg, eggs",baseServ:4,
+    ing:[["rice",1],["frozen_stirfry_veg",1],["eggs",0.5]]},
+  {n:"BLT sandwiches",type:"Lunch",cuisine:"Lunch",note:"Bacon, lettuce, tomato, bread",baseServ:4,
+    ing:[["bacon",1],["lettuce",0.5],["tomato",1],["bread",1]]},
+  {n:"Quesadillas",type:"Lunch",cuisine:"Lunch",note:"Tortillas, cheese, salsa",baseServ:4,quick:true,
+    ing:[["tortillas",1],["cheese",1],["salsa",0.5]]},
+  {n:"Soup & side salad",type:"Lunch",cuisine:"Lunch",note:"Tomato soup, salad kit",baseServ:4,
+    ing:[["tomato_soup",3],["saladkit",1]]},
+
+  // ---- Dinner: Mexican ----
+  {n:"Chicken fajitas",type:"Dinner",cuisine:"Mexican",note:"Chicken breast, peppers, onions, tortillas",baseServ:4,
+    ing:[["chicken_breast",1.25],["peppers",1],["onions",0.33],["tortillas",1],["salsa",0.5],["sourcream",0.5],["cheese",0.5],["pantrystaples",1]]},
+  {n:"Ground beef taco bowls",type:"Dinner",cuisine:"Mexican",note:"Ground beef, taco shells, salsa, cheese",baseServ:4,
+    ing:[["ground_beef",1],["tacoshells",1],["salsa",0.5],["sourcream",0.5],["cheese",0.5],["pantrystaples",1]]},
+  {n:"Shrimp tacos with slaw",type:"Dinner",cuisine:"Mexican",note:"Shrimp, tortillas, cabbage slaw, salsa",baseServ:4,
+    ing:[["shrimp",1],["tortillas",1],["salsa",0.5],["sourcream",0.5],["pantrystaples",1]]},
+  {n:"Turkey & black bean chili",type:"Dinner",cuisine:"Mexican",note:"Ground turkey, salsa, pantry spices",baseServ:4,
+    ing:[["ground_turkey",1],["salsa",1],["onions",0.33],["cheese",0.5],["pantrystaples",1]]},
+
+  // ---- Dinner: American ----
+  {n:"Pork chops with apples & onions",type:"Dinner",cuisine:"American",note:"Bone-in chops, Honeycrisp apples, onions",baseServ:4,
+    ing:[["pork_chops",2],["apples",1],["onions",0.33],["pantrystaples",1]]},
+  {n:"Sirloin steak with roasted potatoes",type:"Dinner",cuisine:"American",note:"Top sirloin, russet potatoes, carrots",baseServ:4,
+    ing:[["sirloin_steak",1.5],["potatoes",1],["carrots",0.5]]},
+  {n:"Slow cooker BBQ pulled pork",type:"Dinner",cuisine:"American",note:"Pork shoulder, onions, buns",baseServ:4,
+    ing:[["pork_shoulder",3],["onions",0.33],["buns",1],["marinade",0.5]]},
+  {n:"Oven St. Louis-style spareribs",type:"Dinner",cuisine:"American",note:"Spareribs, dry rub",baseServ:4,
+    ing:[["spareribs",2.5],["marinade",0.5]]},
+  {n:"Tuna melts",type:"Dinner",cuisine:"American",note:"Tuna, mayo, cheese, bread",baseServ:4,quick:true,
+    ing:[["tuna",2],["mayo",0.3],["cheese",0.5],["bread",0.5]]},
+  {n:"Turkey burgers with sweet potato fries",type:"Dinner",cuisine:"American",note:"Ground turkey patties, buns, sweet potato",baseServ:4,
+    ing:[["ground_turkey",1.25],["buns",1],["cheese",0.5],["sweet_potato",1.5]]},
+  {n:"Loaded baked potato soup",type:"Dinner",cuisine:"American",note:"Potatoes, bacon, cheese, sour cream",baseServ:4,
+    ing:[["potatoes",2],["bacon",1],["cheese",0.5],["sourcream",1]]},
+
+  // ---- Dinner: Italian ----
+  {n:"Bacon cream cheese pasta skillet",type:"Dinner",cuisine:"Italian",note:"Bacon, pasta, cream cheese",baseServ:4,
+    ing:[["bacon",1],["pasta",1],["creamcheese",1],["pantrystaples",1]]},
+  {n:"Sausage & pepper skillet",type:"Dinner",cuisine:"Italian",note:"Smoked sausage, peppers, onions",baseServ:4,
+    ing:[["sausage",1],["peppers",1],["onions",0.33]]},
+  {n:"Spaghetti with marinara & meatballs",type:"Dinner",cuisine:"Italian",note:"Ground beef meatballs, pasta, marinara, parmesan",baseServ:4,
+    ing:[["ground_beef",1],["pasta",1],["marinara",1],["parmesan",0.5]]},
+  {n:"Creamy mushroom chicken",type:"Dinner",cuisine:"Italian",note:"Chicken breast, mushrooms, cream, parmesan",baseServ:4,
+    ing:[["chicken_breast",1.25],["mushrooms",1],["heavy_cream",1],["parmesan",0.5]]},
+
+  // ---- Dinner: Mediterranean ----
+  {n:"Chicken tenderloin salad",type:"Dinner",cuisine:"Mediterranean",note:"Tenderloins, salad kit, grapes",baseServ:4,
+    ing:[["chicken_tenderloin",1.25],["saladkit",1],["grapes",1]]},
+  {n:"Greek chicken pita bowls",type:"Dinner",cuisine:"Mediterranean",note:"Chicken, pita, hummus, cucumber, feta",baseServ:4,
+    ing:[["chicken_tenderloin",1.25],["pita_bread",1],["hummus",1],["cucumber",1],["tomato",1],["feta_cheese",0.5]]},
+  {n:"Mediterranean baked salmon",type:"Dinner",cuisine:"Mediterranean",note:"Salmon, tomato, olives, lemon-herb",baseServ:4,
+    ing:[["salmon",1.25],["tomato",1],["olives",0.5],["pantrystaples",1]]},
+  {n:"Chickpea & feta salad",type:"Dinner",cuisine:"Mediterranean",note:"Chickpeas, feta, cucumber, tomato, olives",baseServ:4,
+    ing:[["chickpeas",2],["feta_cheese",0.5],["cucumber",1],["tomato",1],["olives",0.5]]},
+
+  // ---- Dinner: Asian ----
+  {n:"Beef & broccoli stir-fry",type:"Dinner",cuisine:"Asian",note:"Flank steak, broccoli, soy sauce, rice",baseServ:4,
+    ing:[["flank_steak",1.25],["broccoli",1],["soy_sauce",0.5],["rice",1]]},
+  {n:"Chicken teriyaki bowls",type:"Dinner",cuisine:"Asian",note:"Chicken, teriyaki, stir-fry veg, rice",baseServ:4,
+    ing:[["chicken_breast",1.25],["teriyaki_sauce",0.5],["frozen_stirfry_veg",1],["rice",1]]},
+  {n:"Shrimp fried rice",type:"Dinner",cuisine:"Asian",note:"Shrimp, rice, eggs, stir-fry veg, soy sauce",baseServ:4,
+    ing:[["shrimp",1],["rice",1],["eggs",0.5],["frozen_stirfry_veg",1],["soy_sauce",0.3]]},
+  {n:"Garlic butter shrimp & pasta",type:"Dinner",cuisine:"Italian",note:"Shrimp, pasta, garlic butter",baseServ:4,quick:true,
+    ing:[["shrimp",1],["pasta",1],["pantrystaples",1]]},
+  {n:"Turkey & cheese quesadillas",type:"Dinner",cuisine:"American",note:"Deli turkey, tortillas, cheese",baseServ:4,quick:true,
+    ing:[["turkey_deli",1],["tortillas",1],["cheese",1]]},
+  {n:"Egg fried rice",type:"Dinner",cuisine:"Asian",note:"Eggs, rice, stir-fry veg, soy sauce",baseServ:4,quick:true,
+    ing:[["eggs",1.5],["rice",1],["frozen_stirfry_veg",1],["soy_sauce",0.3]]}
+];
+
+const snacks = [
+  {n:"Honeycrisp apple slices",cat:"Fruit",note:"Fresh apples",fresh:true,ing:[["apples",1]]},
+  {n:"Seedless grapes",cat:"Fruit",note:"Fresh grapes",fresh:true,ing:[["grapes",1]]},
+  {n:"Mini seedless watermelon",cat:"Fruit",note:"Whole mini watermelon",fresh:true,ing:[["watermelon",1]]},
+  {n:"Orange / clementine slices",cat:"Fruit",note:"3lb bag",fresh:true,ing:[["oranges",1]]},
+  {n:"Fresh cut fruit cups",cat:"Fruit",note:"Grab and go",fresh:true,ing:[["cutfruit",1]]},
+  {n:"Banana",cat:"Fruit",note:"Grab and go",fresh:true,ing:[["bananas",1]]},
+  {n:"Baby carrots & celery sticks",cat:"Veggie",note:"Fresh veggies",fresh:true,ing:[["carrots",1],["celery",1]]},
+  {n:"Bell peppers & hummus",cat:"Veggie",note:"Sliced peppers, hummus dip",fresh:true,ing:[["peppers",0.5],["hummus",1]]},
+  {n:"Cherry tomatoes",cat:"Veggie",note:"Snack-size, no prep",fresh:true,ing:[["cherry_tomatoes",1]]},
+  {n:"Cucumber slices",cat:"Veggie",note:"Fresh, crisp",fresh:true,ing:[["cucumber",1]]},
+  {n:"Chobani yogurt cups",cat:"Dairy",note:"Multipack",ing:[["yogurt",4]]},
+  {n:"String cheese",cat:"Dairy",note:"Grab and go",ing:[["string_cheese",1]]},
+  {n:"Cottage cheese cups",cat:"Dairy",note:"Multipack",ing:[["cottage_cheese",1]]},
+  {n:"Goldfish crackers multipack",cat:"Salty & Crunchy",note:"Kid-friendly",ing:[["goldfish",1]]},
+  {n:"Chips & salsa",cat:"Salty & Crunchy",note:"Chips plus salsa",ing:[["chips",2],["salsa",0.5]]},
+  {n:"O-Ke-Doke popcorn",cat:"Salty & Crunchy",note:"Bagged popcorn",ing:[["popcorn",1]]},
+  {n:"Pretzels",cat:"Salty & Crunchy",note:"Bagged pretzels",ing:[["pretzels",1]]},
+  {n:"Tortilla chips & guacamole",cat:"Salty & Crunchy",note:"Chips plus guac",ing:[["chips",1],["guacamole",1]]},
+  {n:"Cookies",cat:"Sweet",note:"Multipack",ing:[["cookies",1]]},
+  {n:"Caramel apple dip with apples",cat:"Sweet",note:"Dip plus fresh apples",ing:[["caramel_dip",1],["apples",0.5]]}
+];
+
+const mealTypes = ["Breakfast","Lunch","Dinner"];
+let activeMealType = "Dinner";
+let activeCuisine = "All";
+let activeSnackCat = "All";
+let mealFavOnly = false;
+let snackFavOnly = false;
+let quickOnly = false;
+const mealCounts = {Breakfast: 2, LunchDinner: 7};
+const mealCountMax = {Breakfast: 7, LunchDinner: 14};
+let quickTarget = 2;
+let snackCount = 6;
+let budget = 150;
+const adults = {v:2}, kids = {v:0};
+const selMeals = new Map();
+const selSnacks = new Set();
+let groceryItems = [];
+
+const fmt = n => '$' + n.toFixed(2);
+const defaultServings = () => Math.max(1, adults.v + kids.v);
+
+function ingredientCost(ing){
+  return ing.reduce((t,[key,qty])=> t + (catalog[key] ? catalog[key].price*qty : 0), 0);
+}
+function mealBaseCost(meal){ return ingredientCost(meal.ing); }
+function mealPrice(item, servings){ return mealBaseCost(item) * (servings / item.baseServ); }
+function snackPrice(item){ return ingredientCost(item.ing); }
+
+function cuisinesForType(type){
+  return ["All", ...new Set(meals.filter(m=>m.type===type).map(m=>m.cuisine))];
+}
+
+function renderChips(container, options, active, onClick){
+  container.innerHTML = '';
+  options.forEach(c=>{
+    const b = document.createElement('button');
+    b.className = 'chip' + (c===active ? ' active' : '');
+    b.textContent = c;
+    b.addEventListener('click', ()=> onClick(c));
+    container.appendChild(b);
+  });
+}
+
+function renderTabs(){
+  const el = document.getElementById('mealTypeTabs');
+  el.innerHTML = '';
+  mealTypes.forEach(t=>{
+    const b = document.createElement('button');
+    b.className = 'tab' + (t===activeMealType ? ' active' : '');
+    b.textContent = t;
+    b.addEventListener('click', ()=>{ activeMealType = t; activeCuisine = "All"; render(); });
+    el.appendChild(b);
+  });
+}
+
+function mealRow(item, i){
+  const on = selMeals.has(i);
+  const state = selMeals.get(i);
+  const isFav = favorites.meals.includes(item.n);
+  const row = document.createElement('div');
+  row.className = 'item' + (on ? ' selected' : '');
+  const top = document.createElement('div');
+  top.className = 'item-top';
+  const priceLabel = on ? fmt(mealPrice(item, state.servings)) : '~' + fmt(mealBaseCost(item));
+  top.innerHTML = `
+    <div class="dot"></div>
+    <div style="flex:1;">
+      <div class="item-name">${item.n}</div>
+      <div class="item-cuisine">${item.cuisine}${item.quick ? ' · ⚡ Quick (~15 min)' : ''}</div>
+      <div class="item-note">${item.note}</div>
+    </div>
+    <div class="item-price">${priceLabel}</div>
+    <button class="icon-btn fav-btn${isFav ? ' fav-on' : ''}" type="button">★</button>
+    <button class="icon-btn info-btn" type="button">i</button>
+  `;
+  top.addEventListener('click', (e)=>{ if(e.target.classList.contains('info-btn') || e.target.classList.contains('fav-btn')) return; toggleMeal(i); });
+  top.querySelector('.fav-btn').addEventListener('click', (e)=>{
+    e.stopPropagation(); toggleFav('meals', item.n); render();
+  });
+  top.querySelector('.info-btn').addEventListener('click', (e)=>{
+    e.stopPropagation();
+    alert(item.n + "\n\n" + item.note + "\n\nLook this up online for the full recipe and a photo.");
+  });
+  row.appendChild(top);
+  if(on){
+    const controls = document.createElement('div');
+    controls.className = 'item-controls';
+    controls.innerHTML = `
+      <select>${days.map(d=>`<option value="${d}" ${d===state.day?'selected':''}>${d}</option>`).join('')}</select>
+      <span class="srv">Servings</span>
+      <button data-role="minus">−</button>
+      <span class="srv-val">${state.servings}</span>
+      <button data-role="plus">+</button>
+    `;
+    controls.querySelector('select').addEventListener('change', e=>{ state.day = e.target.value; });
+    controls.querySelector('[data-role=minus]').addEventListener('click', ()=>{ state.servings = Math.max(1, state.servings-1); render(); });
+    controls.querySelector('[data-role=plus]').addEventListener('click', ()=>{ state.servings += 1; render(); });
+    row.appendChild(controls);
+  }
+  return row;
+}
+
+function snackRow(item, i){
+  const on = selSnacks.has(i);
+  const isFav = favorites.snacks.includes(item.n);
+  const row = document.createElement('div');
+  row.className = 'item' + (on ? ' selected' : '');
+  const top = document.createElement('div');
+  top.className = 'item-top';
+  top.innerHTML = `
+    <div class="dot"></div>
+    <div style="flex:1;">
+      <div class="item-name">${item.fresh ? '<span class="fresh-tag">●</span> ' : ''}${item.n}</div>
+      <div class="item-cuisine">${item.cat}</div>
+      <div class="item-note">${item.note}</div>
+    </div>
+    <div class="item-price">${fmt(snackPrice(item))}</div>
+    <button class="icon-btn fav-btn${isFav ? ' fav-on' : ''}" type="button">★</button>
+  `;
+  top.addEventListener('click', (e)=>{ if(e.target.classList.contains('fav-btn')) return;
+    if(selSnacks.has(i)) selSnacks.delete(i);
+    else if(selSnacks.size < snackCount) selSnacks.add(i);
+    render();
+  });
+  top.querySelector('.fav-btn').addEventListener('click', (e)=>{
+    e.stopPropagation(); toggleFav('snacks', item.n); render();
+  });
+  row.appendChild(top);
+  return row;
+}
+
+function groupOf(type){ return type === "Breakfast" ? "Breakfast" : "LunchDinner"; }
+
+function countSelectedOfType(group){
+  let n = 0;
+  selMeals.forEach((s,i)=>{ if(groupOf(meals[i].type)===group) n++; });
+  return n;
+}
+
+function countSelectedQuick(){
+  let n = 0;
+  selMeals.forEach((s,i)=>{ if(groupOf(meals[i].type)==="LunchDinner" && meals[i].quick) n++; });
+  return n;
+}
+
+function toggleMeal(i){
+  const item = meals[i];
+  const group = groupOf(item.type);
+  if(selMeals.has(i)) selMeals.delete(i);
+  else if(countSelectedOfType(group) < mealCounts[group]) selMeals.set(i, {day:'Mon', servings: defaultServings()});
+  render();
+}
+
+function computeTotal(){
+  let t = 0;
+  selMeals.forEach((s,i)=>{ t += mealPrice(meals[i], s.servings); });
+  selSnacks.forEach(i=>{ t += snackPrice(snacks[i]); });
+  return t;
+}
+
+function render(){
+  renderTabs();
+  renderChips(document.getElementById('cuisineFilters'), cuisinesForType(activeMealType), activeCuisine, c=>{ activeCuisine=c; render(); });
+  renderChips(document.getElementById('snackCatFilters'), ["All", ...new Set(snacks.map(s=>s.cat))], activeSnackCat, c=>{ activeSnackCat=c; render(); });
+
+  document.getElementById('mealFavToggle').classList.toggle('active', mealFavOnly);
+  document.getElementById('snackFavToggle').classList.toggle('active', snackFavOnly);
+
+  const mealListEl = document.getElementById('mealList');
+  mealListEl.innerHTML = '';
+  meals.forEach((m,i)=>{
+    if(m.type !== activeMealType) return;
+    if(activeCuisine!=="All" && m.cuisine!==activeCuisine) return;
+    if(mealFavOnly && !favorites.meals.includes(m.n)) return;
+    if(quickOnly && !m.quick) return;
+    mealListEl.appendChild(mealRow(m,i));
+  });
+  if(mealListEl.children.length===0){
+    const empty = document.createElement('div');
+    empty.className = 'subtle';
+    empty.textContent = 'No meals match this filter.';
+    mealListEl.appendChild(empty);
+  }
+
+  const snackListEl = document.getElementById('snackList');
+  snackListEl.innerHTML = '';
+  snacks.forEach((s,i)=>{
+    if(activeSnackCat!=="All" && s.cat!==activeSnackCat) return;
+    if(snackFavOnly && !favorites.snacks.includes(s.n)) return;
+    snackListEl.appendChild(snackRow(s,i));
+  });
+
+  document.getElementById('adultsVal').textContent = adults.v;
+  document.getElementById('kidsVal').textContent = kids.v;
+
+  const pluralLabels = {Breakfast:"Breakfasts", LunchDinner:"Meals (lunch + dinner)"};
+  const activeGroup = groupOf(activeMealType);
+  const mealCountInput = document.getElementById('mealCount');
+  mealCountInput.max = mealCountMax[activeGroup];
+  mealCountInput.value = mealCounts[activeGroup];
+  document.getElementById('mealCountVal').textContent = mealCounts[activeGroup];
+  document.getElementById('mealCountLabel').textContent = pluralLabels[activeGroup] + ' to make';
+
+  const quickRow = document.getElementById('quickRow');
+  quickRow.style.display = activeGroup === "LunchDinner" ? 'block' : 'none';
+  document.getElementById('quickTargetVal').textContent = quickTarget;
+  document.getElementById('quickProgress').textContent = `${countSelectedQuick()} of ${quickTarget} quick meals selected`;
+  document.getElementById('quickOnlyToggle').classList.toggle('active', quickOnly);
+
+  document.getElementById('snackCountVal').textContent = snackCount;
+  document.getElementById('budgetVal').textContent = '$' + budget;
+
+  const total = computeTotal();
+  [document.getElementById('totalVal'), document.getElementById('groceryTotalVal')].forEach(el=>{
+    el.innerHTML = `${fmt(total)} <span class="budget">/ $${budget}</span>`;
+    el.classList.toggle('over', total > budget);
+  });
+
+  document.getElementById('confirmBtn').disabled = selMeals.size===0 && selSnacks.size===0;
+}
+
+document.getElementById('adultsMinus').addEventListener('click',()=>{adults.v=Math.max(0,adults.v-1); render();});
+document.getElementById('adultsPlus').addEventListener('click',()=>{adults.v=Math.min(10,adults.v+1); render();});
+document.getElementById('kidsMinus').addEventListener('click',()=>{kids.v=Math.max(0,kids.v-1); render();});
+document.getElementById('kidsPlus').addEventListener('click',()=>{kids.v=Math.min(10,kids.v+1); render();});
+document.getElementById('mealCount').addEventListener('input', e=>{
+  const val = Number(e.target.value);
+  const group = groupOf(activeMealType);
+  mealCounts[group] = val;
+  let excess = countSelectedOfType(group) - val;
+  if(excess > 0){
+    for(const [key] of selMeals){
+      if(excess<=0) break;
+      if(groupOf(meals[key].type)===group){ selMeals.delete(key); excess--; }
+    }
+  }
+  render();
+});
+document.getElementById('quickTarget').addEventListener('input', e=>{ quickTarget = Number(e.target.value); render(); });
+document.getElementById('quickOnlyToggle').addEventListener('click', ()=>{ quickOnly = !quickOnly; render(); });
+document.getElementById('snackCount').addEventListener('input', e=>{ snackCount=Number(e.target.value); render(); });
+document.getElementById('budgetSlider').addEventListener('input', e=>{ budget=Number(e.target.value); render(); });
+document.getElementById('mealFavToggle').addEventListener('click', ()=>{ mealFavOnly = !mealFavOnly; render(); });
+document.getElementById('snackFavToggle').addEventListener('click', ()=>{ snackFavOnly = !snackFavOnly; render(); });
+
+function buildGroceryList(){
+  const agg = {};
+  selMeals.forEach((s,i)=>{
+    const m = meals[i];
+    const factor = s.servings / m.baseServ;
+    m.ing.forEach(([key, qty])=>{ agg[key] = (agg[key]||0) + qty*factor; });
+  });
+  selSnacks.forEach(i=>{
+    snacks[i].ing.forEach(([key, qty])=>{ agg[key] = (agg[key]||0) + qty; });
+  });
+  groceryItems = Object.entries(agg).map(([key, qty])=>({
+    key, qty: Math.round(qty*100)/100, ...catalog[key]
+  })).sort((a,b)=> a.name.localeCompare(b.name));
+  renderGrocery();
+  document.getElementById('groceryList').style.display = 'block';
+  document.getElementById('groceryList').scrollIntoView({behavior:'smooth'});
+}
+
+function renderGrocery(){
+  const root = document.getElementById('groceryRoot');
+  root.innerHTML = '';
+  groceryItems.forEach((item)=>{
+    const row = document.createElement('div');
+    row.className = 'grocery-row';
+    const lineTotal = item.price * item.qty;
+    row.innerHTML = `
+      <div style="flex:1;"><div class="gname">${item.name}</div></div>
+      <button data-role="minus">−</button>
+      <span class="gqty">${item.qty} ${item.unit}</span>
+      <button data-role="plus">+</button>
+      <span class="gtotal">${fmt(lineTotal)}</span>
+    `;
+    const step = item.unit === 'lb' ? 0.25 : 1;
+    row.querySelector('[data-role=minus]').addEventListener('click', ()=>{
+      item.qty = Math.max(0, Math.round((item.qty - step)*100)/100); renderGrocery();
+    });
+    row.querySelector('[data-role=plus]').addEventListener('click', ()=>{
+      item.qty = Math.round((item.qty + step)*100)/100; renderGrocery();
+    });
+    root.appendChild(row);
+  });
+  const total = groceryItems.reduce((t,i)=> t + i.price*i.qty, 0);
+  const el = document.getElementById('groceryTotalVal');
+  el.innerHTML = `${fmt(total)} <span class="budget">/ $${budget}</span>`;
+  el.classList.toggle('over', total > budget);
+}
+
+document.getElementById('confirmBtn').addEventListener('click', buildGroceryList);
+
+/* ---------- Price editor ---------- */
+const priceCats = [...new Set(Object.values(catalog).map(c=>c.cat))];
+
+function renderPriceForm(){
+  const form = document.getElementById('priceForm');
+  form.innerHTML = '';
+  priceCats.forEach(cat=>{
+    const h = document.createElement('div');
+    h.className = 'price-cat';
+    h.textContent = cat;
+    form.appendChild(h);
+    Object.entries(catalog).forEach(([key, item])=>{
+      if(item.cat !== cat) return;
+      const row = document.createElement('div');
+      row.className = 'price-row';
+      row.innerHTML = `
+        <div style="flex:1;">
+          <div class="pname">${item.name}</div>
+          <div class="punit">per ${item.unit} · <span class="pkey">${key}</span></div>
+        </div>
+        <input type="number" step="0.01" min="0" data-key="${key}" value="${item.price}">
+      `;
+      form.appendChild(row);
+    });
+  });
+}
+
+document.getElementById('priceEditToggle').addEventListener('click', ()=>{
+  renderPriceForm();
+  document.getElementById('priceOverlay').classList.add('open');
+});
+document.getElementById('closePriceSheet').addEventListener('click', ()=>{
+  document.getElementById('priceOverlay').classList.remove('open');
+});
+document.getElementById('priceOverlay').addEventListener('click', (e)=>{
+  if(e.target.id === 'priceOverlay') document.getElementById('priceOverlay').classList.remove('open');
+});
+
+document.getElementById('importPricesBtn').addEventListener('click', ()=>{
+  const text = document.getElementById('pasteBox').value;
+  const lines = text.split('\n');
+  let count = 0;
+  lines.forEach(line=>{
+    const m = line.match(/^\s*([a-zA-Z0-9_]+)\s*[:=]\s*\$?\s*([0-9]+(\.[0-9]+)?)/);
+    if(m){
+      const key = m[1].trim();
+      const val = parseFloat(m[2]);
+      if(catalog[key] && !isNaN(val)){ catalog[key].price = val; count++; }
+    }
+  });
+  renderPriceForm();
+  render();
+  const msg = document.getElementById('importMsg');
+  msg.style.display = 'block';
+  msg.textContent = count > 0 ? `Imported ${count} price(s). Tap "Save prices" to keep them.` : "No matching item keys found in that text.";
+  msg.style.color = count > 0 ? 'var(--sage)' : 'var(--paprika)';
+});
+
+document.getElementById('savePricesBtn').addEventListener('click', ()=>{
+  const inputs = document.querySelectorAll('#priceForm input[data-key]');
+  const overrides = {};
+  inputs.forEach(inp=>{
+    const key = inp.dataset.key;
+    const val = parseFloat(inp.value);
+    if(!isNaN(val)){ catalog[key].price = val; overrides[key] = val; }
+  });
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(overrides));
+  render();
+  const msg = document.getElementById('saveConfirmMsg');
+  msg.style.display = 'block';
+  setTimeout(()=>{ msg.style.display = 'none'; }, 1800);
+});
+
+document.getElementById('resetPricesBtn').addEventListener('click', ()=>{
+  localStorage.removeItem(STORAGE_KEY);
+  catalog = loadCatalog();
+  renderPriceForm();
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
